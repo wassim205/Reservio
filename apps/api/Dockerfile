@@ -1,6 +1,9 @@
 # Development Dockerfile for API
 FROM node:20-alpine
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Enable pnpm
 RUN corepack enable
 
