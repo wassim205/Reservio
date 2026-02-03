@@ -1,0 +1,49 @@
+version: '1.0'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: reservio-database
+    environment:
+      POSTGRES_DB: reservio
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: reservio-api
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/reservio?schema=public
+      - API_PORT=4000
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    depends_on:
+      - database
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: reservio-web
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - WEB_PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
