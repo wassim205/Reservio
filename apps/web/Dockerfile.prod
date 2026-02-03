@@ -1,0 +1,34 @@
+# Production Dockerfile for Web
+FROM node:20-alpine AS builder
+
+# Enable pnpm
+RUN corepack enable
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
+
+# Copy source and build
+COPY . .
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+# Enable pnpm
+RUN corepack enable
+
+WORKDIR /app
+
+# Copy built app
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Expose port from environment variable
+EXPOSE ${WEB_PORT}
+
+# Start production server
+CMD ["node", "server.js"]
