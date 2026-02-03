@@ -13,11 +13,18 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  fullname  String?
+  fullname  String
   email     String   @unique
   password  String
+  role      Role     @default(PARTICIPANT)  
+
+  reservations Reservation[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@map("users")
+enum Role {
+  ADMIN
+  PARTICIPANT
 }
