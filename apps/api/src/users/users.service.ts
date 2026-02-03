@@ -1,5 +1,11 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { PrismaClient, Prisma, User } from '@prisma/client';
+import { PrismaClient, Prisma, User, RefreshToken } from '@prisma/client';
+
+interface CreateRefreshTokenInput {
+  token: string;
+  userId: string;
+  expiresAt: Date;
+}
 
 @Injectable()
 export class UsersService {
@@ -30,5 +36,38 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  // Refresh Token Methods
+  async createRefreshToken(data: CreateRefreshTokenInput): Promise<RefreshToken> {
+    return this.prisma.refreshToken.create({
+      data: {
+        token: data.token,
+        userId: data.userId,
+        expiresAt: data.expiresAt,
+      },
+    });
+  }
+
+  async findRefreshToken(token: string): Promise<RefreshToken | null> {
+    return this.prisma.refreshToken.findUnique({
+      where: { token },
+    });
+  }
+
+  async deleteRefreshToken(token: string): Promise<void> {
+    try {
+      await this.prisma.refreshToken.delete({
+        where: { token },
+      });
+    } catch {
+      // Token might not exist, ignore error
+    }
+  }
+
+  async deleteAllRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
   }
 }

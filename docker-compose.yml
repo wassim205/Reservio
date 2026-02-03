@@ -19,6 +19,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@database:5432/reservio?schema=public
       - API_PORT=4000
+      - ACCESS_TOKEN_SECRET=cqs998rty21t3k6il8vev68ce46za871un81uop17ob12vc7e22w6xi98k7oc
+      - REFRESH_TOKEN_SECRET=ip6875t95b95v5r5v97a3w61xa6xc2r8ey17yu71it1o9iy3t89ye57s4e9s6c
     ports:
       - "4000:4000"
     volumes:
