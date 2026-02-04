@@ -1,3 +1,4 @@
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import type {
   LoginInput,
   RegisterInput,
@@ -20,42 +21,48 @@ interface AuthResponse {
 }
 
 class ApiClient {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_URL}${endpoint}`;
+  private client: AxiosInstance;
 
-    const response = await fetch(url, {
-      ...options,
-      credentials: 'include',
+  constructor() {
+    this.client = axios.create({
+      baseURL: API_URL,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
       },
     });
+  }
 
-    const data = await response.json();
+  private async request<T>(
+    endpoint: string,
+    options: { method?: string; data?: unknown } = {}
+  ): Promise<T> {
+    try {
+      const response = await this.client.request<T>({
+        url: endpoint,
+        method: options.method || 'GET',
+        data: options.data,
+      });
 
-    if (!response.ok) {
-      throw data as ApiError;
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiError>;
+      throw axiosError.response?.data || { message: 'Network error', statusCode: 500 };
     }
-
-    return data as T;
   }
 
   // Auth endpoints
   async login(input: LoginInput): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(input),
+      data: input,
     });
   }
 
   async register(input: RegisterInput): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(input),
+      data: input,
     });
   }
 
@@ -95,7 +102,7 @@ class ApiClient {
   async createEvent(input: CreateEventInput): Promise<{ event: Event; message: string }> {
     return this.request<{ event: Event; message: string }>('/events', {
       method: 'POST',
-      body: JSON.stringify(input),
+      data: input,
     });
   }
 
@@ -103,7 +110,7 @@ class ApiClient {
   async updateEvent(id: string, input: UpdateEventInput): Promise<{ event: Event; message: string }> {
     return this.request<{ event: Event; message: string }>(`/events/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(input),
+      data: input,
     });
   }
 
@@ -184,19 +191,16 @@ class ApiClient {
 
   // Download ticket PDF (participant - only for CONFIRMED registrations)
   async downloadTicket(registrationId: string): Promise<Blob> {
-    const url = `${API_URL}/registrations/${registrationId}/ticket`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw errorData as ApiError;
+    try {
+      const response = await this.client.get<Blob>(
+        `/registrations/${registrationId}/ticket`,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiError>;
+      throw axiosError.response?.data || { message: 'Failed to download ticket', statusCode: 500 };
     }
-
-    return response.blob();
   }
 
   // ============ ADMIN STATS ENDPOINTS ============
