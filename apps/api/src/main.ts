@@ -18,11 +18,12 @@ async function bootstrap() {
   // Get ConfigService to access environment variables
   const configService = app.get(ConfigService);
   
-  // Enable CORS if configured
-  const corsEnabled = configService.get<string>('CORS_ENABLED') === 'true';
-  if (corsEnabled) {
-    app.enableCors();
-  }
+  // Enable CORS for frontend
+  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+  app.enableCors({
+    origin: frontendUrl,
+    credentials: true,
+  });
   
   // Get port from environment or default to 3001
   const port = configService.get<number>('API_PORT') || 3001;
