@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
 import { Role } from '@prisma/client';
 
 describe('AuthController', () => {
@@ -42,12 +43,17 @@ describe('AuthController', () => {
       get: jest.fn().mockReturnValue('test-secret'),
     };
 
+    const mockUsersService = {
+      findById: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
@@ -103,14 +109,14 @@ describe('AuthController', () => {
   describe('logout', () => {
     it('should logout and clear cookies', async () => {
       authService.logout.mockResolvedValue({ message: 'Logged out successfully' });
+      const mockRequest = {
+        cookies: { refresh_token: 'token' },
+      } as any;
       const mockResponse = {
         clearCookie: jest.fn(),
       } as any;
 
-      const result = await controller.logout(
-        { refresh_token: 'token' },
-        mockResponse,
-      );
+      const result = await controller.logout(mockRequest, mockResponse);
 
       expect(authService.logout).toHaveBeenCalledWith('token');
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);

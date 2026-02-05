@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Post,
+  Get,
   HttpCode,
   HttpStatus,
   UseGuards,
   Request,
+  Req,
   Res,
 } from '@nestjs/common';
 import * as express from 'express';
@@ -14,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthGuard } from './auth.guard';
+import { UsersService } from '../users/users.service';
 
 // Cookie options for security
 const COOKIE_OPTIONS = {
@@ -25,7 +28,10 @@ const COOKIE_OPTIONS = {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private usersService: UsersService,
+  ) {}
 
   private setAuthCookies(
     res: express.Response,
@@ -84,10 +90,16 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    await this.authService.logout(refreshTokenDto.refresh_token);
+    const cookies = req.cookies as Record<string, string> | undefined;
+    const refreshToken = cookies?.refresh_token;
+    
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+    
     this.clearAuthCookies(res);
     return { message: 'Logged out successfully' };
   }
@@ -102,5 +114,16 @@ export class AuthController {
     await this.authService.logoutAll(req.user.sub);
     this.clearAuthCookies(res);
     return { message: 'Logged out from all devices' };
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  async getMe(@Request() req: { user: { sub: string } }) {
+    const user = await this.usersService.findById(req.user.sub);
+    if (!user) {
+      return null;
+    }
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword };
   }
 }
