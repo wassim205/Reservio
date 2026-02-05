@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { validateLoginForm, hasErrors, type ValidationErrors } from '@/lib/validation';
 
 export function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +32,8 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      await api.login({ email, password });
+      const response = await api.login({ email, password });
+      login(response.user);
       router.push('/');
     } catch (error: unknown) {
       const err = error as { message?: string };

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { validateRegisterForm, hasErrors, type ValidationErrors } from '@/lib/validation';
 
 export function RegisterForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [fullname, setFullname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +34,8 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      await api.register({ fullname, email, password });
+      const response = await api.register({ fullname, email, password });
+      login(response.user);
       router.push('/');
     } catch (error: unknown) {
       const err = error as { message?: string };

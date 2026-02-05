@@ -5,7 +5,8 @@ import type {
   User,
 } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Use same-origin proxy to avoid cross-origin cookie issues
+const API_URL = '/api';
 
 // Response types for cookie-based auth
 interface AuthResponse {
@@ -21,7 +22,7 @@ class ApiClient {
 
     const response = await fetch(url, {
       ...options,
-      credentials: 'include', // Important: send cookies with requests
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -56,6 +57,14 @@ class ApiClient {
     return this.request<{ message: string }>('/auth/logout', {
       method: 'POST',
     });
+  }
+
+  async getMe(): Promise<AuthResponse | null> {
+    try {
+      return await this.request<AuthResponse>('/auth/me');
+    } catch {
+      return null;
+    }
   }
 }
 
