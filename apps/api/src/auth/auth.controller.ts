@@ -9,12 +9,12 @@ import {
   Request,
   Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthGuard } from './auth.guard';
 import { UsersService } from '../users/users.service';
 
@@ -77,12 +77,17 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() req: express.Request,
     @Res({ passthrough: true }) res: express.Response,
   ) {
-    const result = await this.authService.refreshTokens(
-      refreshTokenDto.refresh_token,
-    );
+    const cookies = req.cookies as Record<string, string> | undefined;
+    const refreshToken = cookies?.refresh_token;
+    
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    
+    const result = await this.authService.refreshTokens(refreshToken);
     this.setAuthCookies(res, result.access_token, result.refresh_token);
     return { message: 'Tokens refreshed' };
   }
