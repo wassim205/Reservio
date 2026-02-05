@@ -10,11 +10,12 @@ import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { User } from '@prisma/client';
+import { User, Role } from '@prisma/client';
 
 export interface TokenPayload {
   sub: string;
   email: string;
+  role: Role;
 }
 
 export interface AuthTokens {
@@ -140,7 +141,12 @@ export class AuthService {
   }
 
   private async generateTokens(user: User): Promise<AuthTokens> {
-    const payload: TokenPayload = { sub: user.id, email: user.email };
+    // Include role in JWT payload for authorization checks
+    const payload: TokenPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
 
     // Generate access token (short-lived)
     const access_token = await this.jwtService.signAsync(payload);
