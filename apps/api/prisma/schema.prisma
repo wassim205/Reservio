@@ -19,6 +19,7 @@ model User {
   role      Role     @default(PARTICIPANT)  
 
   refreshTokens RefreshToken[]
+  createdEvents Event[]        // Events created by this admin
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,4 +40,36 @@ model RefreshToken {
 enum Role {
   ADMIN
   PARTICIPANT
+}
+
+// Event status for lifecycle management
+enum EventStatus {
+  DRAFT       // Event is being prepared, not visible to participants
+  PUBLISHED   // Event is live and open for reservations
+  CANCELLED   // Event has been cancelled
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  location    String
+  startDate   DateTime
+  endDate     DateTime
+  capacity    Int         // Maximum number of participants
+  status      EventStatus @default(DRAFT)
+
+  // Metadata stored as JSON for flexibility (tags, category, image, etc.)
+  metadata    Json?
+
+  // Admin who created the event
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([startDate])
+  @@index([createdById])
 }
