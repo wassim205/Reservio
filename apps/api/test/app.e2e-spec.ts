@@ -91,7 +91,9 @@ describe('App E2E Tests', () => {
           .send(testUser)
           .expect(409);
 
-        expect(response.body.message).toBe('User with this email already exists');
+        expect(response.body.message).toBe(
+          'User with this email already exists',
+        );
       });
 
       it('should validate required fields', async () => {
@@ -288,4 +290,3 @@ describe('App E2E Tests', () => {
     });
   });
 });
-

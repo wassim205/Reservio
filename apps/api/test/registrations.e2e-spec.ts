@@ -40,7 +40,7 @@ describe('Registrations E2E', () => {
   let participantCookies: string[];
   let participant2Cookies: string[];
   let adminId: string;
-  let participantId: string;
+  let _participantId: string;
   let testEventId: string;
   let registrationId: string;
 
@@ -79,7 +79,7 @@ describe('Registrations E2E', () => {
       .post('/auth/register')
       .send(participantUser);
     participantCookies = getCookies(participantResponse);
-    participantId = participantResponse.body.user.id;
+    _participantId = participantResponse.body.user.id;
 
     const participant2Response = await request(app.getHttpServer())
       .post('/auth/register')
@@ -124,7 +124,11 @@ describe('Registrations E2E', () => {
       where: {
         user: {
           email: {
-            in: [adminUser.email, participantUser.email, participant2User.email],
+            in: [
+              adminUser.email,
+              participantUser.email,
+              participant2User.email,
+            ],
           },
         },
       },
@@ -431,7 +435,9 @@ describe('Registrations E2E', () => {
         .set('Cookie', participantCookies)
         .expect(400);
 
-      expect(response.body.message).toBe('This reservation is already cancelled');
+      expect(response.body.message).toBe(
+        'This reservation is already cancelled',
+      );
     });
 
     it('participant can re-register after cancelling', async () => {

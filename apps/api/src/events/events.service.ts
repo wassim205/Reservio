@@ -11,7 +11,10 @@ export class EventsService {
   private prisma = new PrismaClient();
 
   // Create a new event (defaults to DRAFT status)
-  async create(createEventDto: CreateEventDto, adminId: string): Promise<Event> {
+  async create(
+    createEventDto: CreateEventDto,
+    adminId: string,
+  ): Promise<Event> {
     // Validate dates
     const startDate = new Date(createEventDto.startDate);
     const endDate = new Date(createEventDto.endDate);

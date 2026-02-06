@@ -82,11 +82,11 @@ export class AuthController {
   ) {
     const cookies = req.cookies as Record<string, string> | undefined;
     const refreshToken = cookies?.refresh_token;
-    
+
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
     }
-    
+
     const result = await this.authService.refreshTokens(refreshToken);
     this.setAuthCookies(res, result.access_token, result.refresh_token);
     return { message: 'Tokens refreshed' };
@@ -100,11 +100,11 @@ export class AuthController {
   ) {
     const cookies = req.cookies as Record<string, string> | undefined;
     const refreshToken = cookies?.refresh_token;
-    
+
     if (refreshToken) {
       await this.authService.logout(refreshToken);
     }
-    
+
     this.clearAuthCookies(res);
     return { message: 'Logged out successfully' };
   }

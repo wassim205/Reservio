@@ -106,7 +106,9 @@ describe('TicketsService', () => {
 
       await expect(
         service.getTicketData('reg-123', 'different-user'),
-      ).rejects.toThrow('You can only download tickets for your own registrations');
+      ).rejects.toThrow(
+        'You can only download tickets for your own registrations',
+      );
     });
 
     it('should throw BadRequestException if registration is PENDING', async () => {

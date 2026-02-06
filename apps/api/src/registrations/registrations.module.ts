@@ -5,10 +5,7 @@ import { RegistrationsController } from './registrations.controller';
 import { RegistrationsService } from './registrations.service';
 
 @Module({
-  imports: [
-    ConfigModule,
-    JwtModule.register({}),
-  ],
+  imports: [ConfigModule, JwtModule.register({})],
   controllers: [RegistrationsController],
   providers: [RegistrationsService],
   exports: [RegistrationsService],

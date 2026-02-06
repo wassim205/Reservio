@@ -36,9 +36,7 @@ export class RegistrationsService {
     // 2. Check event is published
     if (event.status !== EventStatus.PUBLISHED) {
       if (event.status === EventStatus.CANCELLED) {
-        throw new BadRequestException(
-          'Cannot register for a cancelled event',
-        );
+        throw new BadRequestException('Cannot register for a cancelled event');
       }
       throw new BadRequestException(
         'Cannot register for an event that is not published',
@@ -47,9 +45,7 @@ export class RegistrationsService {
 
     // 3. Check event is not in the past
     if (event.endDate < new Date()) {
-      throw new BadRequestException(
-        'Cannot register for a past event',
-      );
+      throw new BadRequestException('Cannot register for a past event');
     }
 
     // 4. Check user doesn't already have an active registration
@@ -98,7 +94,9 @@ export class RegistrationsService {
     const activeRegistrations = await this.prisma.registration.count({
       where: {
         eventId,
-        status: { in: [RegistrationStatus.PENDING, RegistrationStatus.CONFIRMED] },
+        status: {
+          in: [RegistrationStatus.PENDING, RegistrationStatus.CONFIRMED],
+        },
       },
     });
 
@@ -138,7 +136,10 @@ export class RegistrationsService {
   /**
    * Cancel own reservation (Participant action)
    */
-  async cancelOwn(registrationId: string, userId: string): Promise<Registration> {
+  async cancelOwn(
+    registrationId: string,
+    userId: string,
+  ): Promise<Registration> {
     const registration = await this.prisma.registration.findUnique({
       where: { id: registrationId },
     });
@@ -148,7 +149,9 @@ export class RegistrationsService {
     }
 
     if (registration.userId !== userId) {
-      throw new BadRequestException('You can only cancel your own reservations');
+      throw new BadRequestException(
+        'You can only cancel your own reservations',
+      );
     }
 
     if (registration.status === RegistrationStatus.CANCELLED) {
@@ -252,7 +255,9 @@ export class RegistrationsService {
       }
 
       if (registration.status === RegistrationStatus.CANCELLED) {
-        throw new BadRequestException('Cannot confirm a cancelled registration');
+        throw new BadRequestException(
+          'Cannot confirm a cancelled registration',
+        );
       }
 
       const confirmedCount = await tx.registration.count({

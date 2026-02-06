@@ -15,10 +15,7 @@ describe('RolesGuard', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RolesGuard,
-        { provide: Reflector, useValue: mockReflector },
-      ],
+      providers: [RolesGuard, { provide: Reflector, useValue: mockReflector }],
     }).compile();
 
     guard = module.get<RolesGuard>(RolesGuard);
@@ -77,7 +74,10 @@ describe('RolesGuard', () => {
 
     it('should allow access when user has one of multiple required roles', () => {
       const context = createMockContext({ role: Role.ADMIN });
-      reflector.getAllAndOverride.mockReturnValue([Role.ADMIN, Role.PARTICIPANT]);
+      reflector.getAllAndOverride.mockReturnValue([
+        Role.ADMIN,
+        Role.PARTICIPANT,
+      ]);
 
       const result = guard.canActivate(context);
 
@@ -107,7 +107,9 @@ describe('RolesGuard', () => {
       reflector.getAllAndOverride.mockReturnValue([Role.ADMIN]);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow('Access denied: No role found');
+      expect(() => guard.canActivate(context)).toThrow(
+        'Access denied: No role found',
+      );
     });
 
     it('should throw ForbiddenException when no user in request', () => {
@@ -115,7 +117,9 @@ describe('RolesGuard', () => {
       reflector.getAllAndOverride.mockReturnValue([Role.ADMIN]);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow('Access denied: No role found');
+      expect(() => guard.canActivate(context)).toThrow(
+        'Access denied: No role found',
+      );
     });
 
     it('should use ROLES_KEY to get metadata', () => {
@@ -164,7 +168,10 @@ describe('RolesGuard', () => {
 
     it('should allow access when route allows multiple roles including user role', () => {
       const context = createMockContext({ role: Role.PARTICIPANT });
-      reflector.getAllAndOverride.mockReturnValue([Role.ADMIN, Role.PARTICIPANT]);
+      reflector.getAllAndOverride.mockReturnValue([
+        Role.ADMIN,
+        Role.PARTICIPANT,
+      ]);
 
       const result = guard.canActivate(context);
 
