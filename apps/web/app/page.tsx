@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import { Event } from '@/lib/types';
 import Link from 'next/link';
 import {
   Calendar,
@@ -17,46 +19,15 @@ import {
   Award,
   LogOut,
   User,
+  Loader2,
 } from 'lucide-react';
 
-// Featured events data
-const featuredEvents = [
-  {
-    title: 'Design Summit 2026',
-    date: '15 Mars 2026',
-    location: 'Tanger',
-    category: 'Design',
-    capacity: 120,
-    booked: 87,
-    gradient: 'from-orange-400 to-rose-500',
-  },
-  {
-    title: 'Tech Workshop',
-    date: '22 Mars 2026',
-    location: 'Casablanca',
-    category: 'Technologie',
-    capacity: 50,
-    booked: 23,
-    gradient: 'from-teal-400 to-emerald-500',
-  },
-  {
-    title: 'Business Conference',
-    date: '30 Mars 2026',
-    location: 'Rabat',
-    category: 'Business',
-    capacity: 200,
-    booked: 156,
-    gradient: 'from-amber-400 to-orange-500',
-  },
-  {
-    title: 'Art Exhibition',
-    date: '5 Avril 2026',
-    location: 'Marrakech',
-    category: 'Art',
-    capacity: 80,
-    booked: 45,
-    gradient: 'from-purple-400 to-indigo-500',
-  },
+// Gradient colors for event cards
+const gradients = [
+  'from-orange-400 to-rose-500',
+  'from-teal-400 to-emerald-500',
+  'from-amber-400 to-orange-500',
+  'from-purple-400 to-indigo-500',
 ];
 
 // Feature items data
@@ -114,6 +85,8 @@ const features = [
 export default function Home() {
   const { user, isLoading, isAdmin, logout } = useAuth();
   const [scrollY, setScrollY] = useState(0);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
   const isVisible = true;
 
   // Handle scroll animations
@@ -121,6 +94,21 @@ export default function Home() {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fetch published events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const { events } = await api.getPublishedEvents();
+        setEvents(events.slice(0, 4)); // Limit to 4 events on home page
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    fetchEvents();
   }, []);
 
   // Loading state
@@ -197,12 +185,12 @@ export default function Home() {
               isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
             }`}
           >
-            <a
-              href="#events"
+            <Link
+              href="/events"
               className="text-sm font-semibold text-slate-700 hover:text-orange-600 transition-colors"
             >
               Événements
-            </a>
+            </Link>
             <a
               href="#features"
               className="text-sm font-semibold text-slate-700 hover:text-orange-600 transition-colors"
@@ -228,12 +216,12 @@ export default function Home() {
                 ) : (
                   <span className="flex items-center gap-1.5 px-3 py-1.5 bg-linear-to-r from-orange-400 to-rose-400 text-white text-sm font-bold rounded-full">
                     <User className="w-4 h-4" />
-                    Participant
+                    {user.fullname}
                   </span>
                 )}
                 <button
                   onClick={logout}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   Déconnexion
@@ -498,76 +486,117 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredEvents.map((event, index) => (
-              <div
-                key={index}
-                className="group bg-white rounded-2xl overflow-hidden border-2 border-orange-200 shadow-xl hover:shadow-2xl transition-all hover:scale-105 cursor-pointer"
-              >
-                <div
-                  className={`relative h-48 overflow-hidden bg-linear-to-br ${event.gradient}`}
-                >
-                  <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 to-transparent" />
-                  <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold text-slate-800 shadow-lg">
-                    {event.category}
-                  </div>
-                  <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold shadow-lg">
-                    <span
-                      className={`${
-                        event.booked / event.capacity > 0.8
-                          ? 'text-red-600'
-                          : event.booked / event.capacity > 0.5
-                            ? 'text-orange-600'
-                            : 'text-green-600'
-                      }`}
+          {eventsLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-20">
+              <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-slate-600 mb-2">
+                Aucun événement disponible
+              </h3>
+              <p className="text-slate-500">
+                Revenez bientôt pour découvrir nos prochains événements !
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {events.map((event, index) => {
+                  const bookedSeats = event.capacity - (event.remainingSeats ?? event.capacity);
+                  const bookingPercentage = (bookedSeats / event.capacity) * 100;
+                  const gradient = gradients[index % gradients.length];
+                  
+                  return (
+                    <Link
+                      href={`/events/${event.id}`}
+                      key={event.id}
+                      className="group bg-white rounded-2xl overflow-hidden border-2 border-orange-200 shadow-xl hover:shadow-2xl transition-all hover:scale-105 cursor-pointer"
                     >
-                      {Math.round((event.booked / event.capacity) * 100)}% réservé
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <h3 className="text-xl font-black text-slate-800 group-hover:text-orange-600 transition-colors line-clamp-2">
-                    {event.title}
-                  </h3>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
-                      <Calendar className="w-4 h-4 text-orange-600" />
-                      <span>{event.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
-                      <MapPin className="w-4 h-4 text-rose-600" />
-                      <span>{event.location}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t-2 border-orange-100">
-                    <div className="flex items-center justify-between mb-2 text-sm">
-                      <span className="text-slate-600 font-semibold">
-                        Places restantes
-                      </span>
-                      <span className="font-black text-slate-800">
-                        {event.capacity - event.booked}/{event.capacity}
-                      </span>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-linear-to-r from-orange-500 to-rose-500 transition-all rounded-full"
-                        style={{
-                          width: `${(event.booked / event.capacity) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
+                        className={`relative h-48 overflow-hidden bg-linear-to-br ${gradient}`}
+                      >
+                        <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 to-transparent" />
+                        <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold text-slate-800 shadow-lg">
+                          Événement
+                        </div>
+                        <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold shadow-lg">
+                          <span
+                            className={`${
+                              bookingPercentage > 80
+                                ? 'text-red-600'
+                                : bookingPercentage > 50
+                                  ? 'text-orange-600'
+                                  : 'text-green-600'
+                            }`}
+                          >
+                            {Math.round(bookingPercentage)}% réservé
+                          </span>
+                        </div>
+                      </div>
 
-                  <button className="w-full py-3 bg-linear-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all">
-                    Réserver
-                  </button>
-                </div>
+                      <div className="p-6 space-y-4">
+                        <h3 className="text-xl font-black text-slate-800 group-hover:text-orange-600 transition-colors line-clamp-2">
+                          {event.title}
+                        </h3>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
+                            <Calendar className="w-4 h-4 text-orange-600" />
+                            <span>
+                              {new Date(event.startDate).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
+                            <MapPin className="w-4 h-4 text-rose-600" />
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t-2 border-orange-100">
+                          <div className="flex items-center justify-between mb-2 text-sm">
+                            <span className="text-slate-600 font-semibold">
+                              Places restantes
+                            </span>
+                            <span className="font-black text-slate-800">
+                              {event.remainingSeats ?? event.capacity}/{event.capacity}
+                            </span>
+                          </div>
+                          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-linear-to-r from-orange-500 to-rose-500 transition-all rounded-full"
+                              style={{
+                                width: `${bookingPercentage}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="w-full py-3 bg-linear-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all text-center">
+                          Voir les détails
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+
+              <div className="text-center mt-12">
+                <Link
+                  href="/events"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-orange-300 rounded-xl font-bold text-orange-600 shadow-lg hover:shadow-xl hover:bg-orange-50 transition-all"
+                >
+                  Voir tous les événements
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </section>
 

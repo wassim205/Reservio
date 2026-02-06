@@ -34,7 +34,13 @@ export function LoginForm() {
     try {
       const response = await api.login({ email, password });
       login(response.user);
-      router.push('/');
+      
+      // Redirect admin to dashboard, participants to home
+      if (response.user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } catch (error: unknown) {
       const err = error as { message?: string };
       setApiError(err.message || 'Une erreur est survenue');

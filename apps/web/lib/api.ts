@@ -3,6 +3,10 @@ import type {
   RegisterInput,
   ApiError,
   User,
+  Event,
+  CreateEventInput,
+  UpdateEventInput,
+  EventStatus,
 } from './types';
 
 // Use same-origin proxy to avoid cross-origin cookie issues
@@ -65,6 +69,61 @@ class ApiClient {
     } catch {
       return null;
     }
+  }
+
+  // ============ EVENT ENDPOINTS ============
+
+  // Get all events (admin only)
+  async getEvents(status?: EventStatus): Promise<{ events: Event[] }> {
+    const query = status ? `?status=${status}` : '';
+    return this.request<{ events: Event[] }>(`/events${query}`);
+  }
+
+  // Get published events (public)
+  async getPublishedEvents(): Promise<{ events: Event[] }> {
+    return this.request<{ events: Event[] }>('/events/published');
+  }
+
+  // Get single event
+  async getEvent(id: string): Promise<{ event: Event }> {
+    return this.request<{ event: Event }>(`/events/${id}`);
+  }
+
+  // Create event (admin only)
+  async createEvent(input: CreateEventInput): Promise<{ event: Event; message: string }> {
+    return this.request<{ event: Event; message: string }>('/events', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  // Update event (admin only)
+  async updateEvent(id: string, input: UpdateEventInput): Promise<{ event: Event; message: string }> {
+    return this.request<{ event: Event; message: string }>(`/events/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  }
+
+  // Publish event (admin only)
+  async publishEvent(id: string): Promise<{ event: Event; message: string }> {
+    return this.request<{ event: Event; message: string }>(`/events/${id}/publish`, {
+      method: 'POST',
+    });
+  }
+
+  // Cancel event (admin only)
+  async cancelEvent(id: string): Promise<{ event: Event; message: string }> {
+    return this.request<{ event: Event; message: string }>(`/events/${id}/cancel`, {
+      method: 'POST',
+    });
+  }
+
+  // Delete event (admin only)
+  async deleteEvent(id: string): Promise<void> {
+    await this.request<void>(`/events/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 
