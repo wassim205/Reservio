@@ -178,6 +178,25 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // ============ TICKET ENDPOINTS ============
+
+  // Download ticket PDF (participant - only for CONFIRMED registrations)
+  async downloadTicket(registrationId: string): Promise<Blob> {
+    const url = `${API_URL}/registrations/${registrationId}/ticket`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw errorData as ApiError;
+    }
+
+    return response.blob();
+  }
 }
 
 export const api = new ApiClient();

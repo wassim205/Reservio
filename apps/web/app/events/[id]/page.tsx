@@ -21,6 +21,7 @@ import {
   Zap,
   Shield,
   CheckCircle,
+  Download,
 } from 'lucide-react';
 
 export default function EventDetailsPage() {
@@ -38,6 +39,9 @@ export default function EventDetailsPage() {
   const [reserving, setReserving] = useState(false);
   const [reservationSuccess, setReservationSuccess] = useState(false);
   const [reservationError, setReservationError] = useState<string | null>(null);
+
+  // Ticket download state
+  const [downloadingTicket, setDownloadingTicket] = useState(false);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -108,6 +112,33 @@ export default function EventDetailsPage() {
       setReservationError(errorMessage);
     } finally {
       setReserving(false);
+    }
+  };
+
+  // Handle ticket download
+  const handleDownloadTicket = async () => {
+    if (!myRegistration) return;
+
+    setDownloadingTicket(true);
+    try {
+      const blob = await api.downloadTicket(myRegistration.id);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ticket-${event?.title?.replace(/\s+/g, '-') || 'reservio'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const apiError = err as { message: string };
+      setReservationError(apiError.message || 'Erreur lors du téléchargement du ticket');
+    } finally {
+      setDownloadingTicket(false);
     }
   };
 
@@ -420,11 +451,38 @@ export default function EventDetailsPage() {
                     </div>
                   )}
 
-                  {/* Already Registered */}
-                  {myRegistration && !reservationSuccess && (
-                    <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-blue-100 text-blue-700 font-semibold rounded-xl">
-                      <CheckCircle className="w-5 h-5" />
-                      {myRegistration.status === 'PENDING' ? 'Réservation en attente de confirmation' : 'Vous êtes inscrit !'}
+                  {/* Already Registered - PENDING */}
+                  {myRegistration && myRegistration.status === 'PENDING' && !reservationSuccess && (
+                    <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-amber-100 text-amber-700 font-semibold rounded-xl">
+                      <Clock className="w-5 h-5" />
+                      Réservation en attente de confirmation
+                    </div>
+                  )}
+
+                  {/* Already Registered - CONFIRMED with Download Button */}
+                  {myRegistration && myRegistration.status === 'CONFIRMED' && !reservationSuccess && (
+                    <div className="flex-1 flex flex-col sm:flex-row items-stretch gap-3">
+                      <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-green-100 text-green-700 font-semibold rounded-xl">
+                        <CheckCircle className="w-5 h-5" />
+                        Vous êtes inscrit !
+                      </div>
+                      <button
+                        onClick={handleDownloadTicket}
+                        disabled={downloadingTicket}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {downloadingTicket ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-5 h-5" />
+                            Télécharger ticket
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
 
