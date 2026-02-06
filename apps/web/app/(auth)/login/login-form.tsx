@@ -35,7 +35,7 @@ export function LoginForm() {
       const response = await api.login({ email, password });
       login(response.user);
       
-      // Redirect admin to dashboard, others to home
+      // Redirect admin to dashboard, participants to home
       if (response.user.role === 'ADMIN') {
         router.push('/admin');
       } else {
