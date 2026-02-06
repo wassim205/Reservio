@@ -61,6 +61,7 @@ export interface Event {
   };
   createdAt: string;
   updatedAt: string;
+  remainingSeats?: number; // Available for published events
 }
 
 export interface CreateEventInput {
