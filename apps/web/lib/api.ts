@@ -157,6 +157,27 @@ class ApiClient {
       return null;
     }
   }
+
+  // ============ ADMIN REGISTRATION ENDPOINTS ============
+
+  // Get registrations for an event (admin)
+  async getEventRegistrations(eventId: string): Promise<{ registrations: Registration[] }> {
+    return this.request<{ registrations: Registration[] }>(`/events/${eventId}/registrations`);
+  }
+
+  // Confirm a registration (admin)
+  async confirmRegistration(id: string): Promise<{ registration: Registration; message: string }> {
+    return this.request<{ registration: Registration; message: string }>(`/registrations/${id}/confirm`, {
+      method: 'POST',
+    });
+  }
+
+  // Reject a registration (admin)
+  async rejectRegistration(id: string): Promise<{ registration: Registration; message: string }> {
+    return this.request<{ registration: Registration; message: string }>(`/registrations/${id}/reject`, {
+      method: 'POST',
+    });
+  }
 }
 
 export const api = new ApiClient();
