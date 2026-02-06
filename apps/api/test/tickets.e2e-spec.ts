@@ -7,6 +7,13 @@ import { PrismaClient, Role, EventStatus, RegistrationStatus } from '@prisma/cli
 import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
 
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
+
 describe('Tickets E2E', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -97,17 +104,17 @@ describe('Tickets E2E', () => {
     const adminResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: adminUser.email, password: adminUser.password });
-    adminCookies = adminResponse.headers['set-cookie'];
+    adminCookies = getCookies(adminResponse);
 
     const participantResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: participantUser.email, password: participantUser.password });
-    participantCookies = participantResponse.headers['set-cookie'];
+    participantCookies = getCookies(participantResponse);
 
     const participant2Response = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: participant2User.email, password: participant2User.password });
-    participant2Cookies = participant2Response.headers['set-cookie'];
+    participant2Cookies = getCookies(participant2Response);
 
     // Create a test event (PUBLISHED)
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

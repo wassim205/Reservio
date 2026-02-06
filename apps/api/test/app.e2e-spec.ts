@@ -5,6 +5,13 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import cookieParser from 'cookie-parser';
 
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
+
 describe('App E2E Tests', () => {
   let app: INestApplication<App>;
 
@@ -47,7 +54,7 @@ describe('App E2E Tests', () => {
 
     let accessToken: string;
     let refreshToken: string;
-    let cookies: string[];
+    let cookies: string[] = [];
 
     describe('POST /auth/register', () => {
       it('should register a new user and set cookies', async () => {
@@ -63,7 +70,7 @@ describe('App E2E Tests', () => {
         expect(response.body.user.password).toBeUndefined();
 
         // Check cookies are set
-        cookies = response.headers['set-cookie'];
+        cookies = getCookies(response);
         expect(cookies).toBeDefined();
         expect(cookies.length).toBeGreaterThanOrEqual(2);
 
@@ -110,7 +117,7 @@ describe('App E2E Tests', () => {
         expect(response.body.user).toBeDefined();
         expect(response.body.user.email).toBe(testUser.email);
 
-        cookies = response.headers['set-cookie'];
+        cookies = getCookies(response);
         expect(cookies).toBeDefined();
 
         // Save tokens for subsequent tests
@@ -201,7 +208,7 @@ describe('App E2E Tests', () => {
             email: testUser.email,
             password: testUser.password,
           });
-        cookies = loginResponse.headers['set-cookie'];
+        cookies = getCookies(loginResponse);
 
         const response = await request(app.getHttpServer())
           .post('/auth/refresh')
@@ -211,7 +218,7 @@ describe('App E2E Tests', () => {
         expect(response.body.message).toBe('Tokens refreshed');
 
         // New cookies should be set
-        const newCookies = response.headers['set-cookie'];
+        const newCookies = getCookies(response);
         expect(newCookies).toBeDefined();
 
         // Update cookies for subsequent tests

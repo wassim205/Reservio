@@ -7,6 +7,13 @@ import { PrismaClient, Role, EventStatus } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
 
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
+
 describe('Registrations E2E', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -71,13 +78,13 @@ describe('Registrations E2E', () => {
     const participantResponse = await request(app.getHttpServer())
       .post('/auth/register')
       .send(participantUser);
-    participantCookies = participantResponse.headers['set-cookie'];
+    participantCookies = getCookies(participantResponse);
     participantId = participantResponse.body.user.id;
 
     const participant2Response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(participant2User);
-    participant2Cookies = participant2Response.headers['set-cookie'];
+    participant2Cookies = getCookies(participant2Response);
 
     // Login as admin
     const adminResponse = await request(app.getHttpServer())
@@ -86,7 +93,7 @@ describe('Registrations E2E', () => {
         email: adminUser.email,
         password: adminUser.password,
       });
-    adminCookies = adminResponse.headers['set-cookie'];
+    adminCookies = getCookies(adminResponse);
 
     // Create a test event
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

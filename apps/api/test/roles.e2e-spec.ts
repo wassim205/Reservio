@@ -7,6 +7,13 @@ import { PrismaClient, Role } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
 
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
+
 describe('Role-Based Access Control (E2E)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -60,7 +67,7 @@ describe('Role-Based Access Control (E2E)', () => {
     const participantResponse = await request(app.getHttpServer())
       .post('/auth/register')
       .send(participantUser);
-    participantCookies = participantResponse.headers['set-cookie'];
+    participantCookies = getCookies(participantResponse);
 
     // Login as admin
     const adminResponse = await request(app.getHttpServer())
@@ -69,7 +76,7 @@ describe('Role-Based Access Control (E2E)', () => {
         email: adminUser.email,
         password: adminUser.password,
       });
-    adminCookies = adminResponse.headers['set-cookie'];
+    adminCookies = getCookies(adminResponse);
   });
 
   afterAll(async () => {
@@ -216,7 +223,7 @@ describe('Role-Based Access Control (E2E)', () => {
         })
         .expect(200);
 
-      const cookies = response.headers['set-cookie'];
+      const cookies = getCookies(response);
       expect(cookies).toBeDefined();
 
       // Check that cookies have httpOnly flag
@@ -247,7 +254,7 @@ describe('Role-Based Access Control (E2E)', () => {
         })
         .expect(200);
 
-      const freshCookies = loginResponse.headers['set-cookie'];
+      const freshCookies = getCookies(loginResponse);
 
       // Logout all sessions
       await request(app.getHttpServer())
@@ -262,7 +269,7 @@ describe('Role-Based Access Control (E2E)', () => {
           email: adminUser.email,
           password: adminUser.password,
         });
-      adminCookies = newLogin.headers['set-cookie'];
+      adminCookies = getCookies(newLogin);
     });
 
     it('participant can logout all their sessions', async () => {
@@ -275,7 +282,7 @@ describe('Role-Based Access Control (E2E)', () => {
         })
         .expect(200);
 
-      const freshCookies = loginResponse.headers['set-cookie'];
+      const freshCookies = getCookies(loginResponse);
 
       // Logout all sessions
       await request(app.getHttpServer())
@@ -290,7 +297,7 @@ describe('Role-Based Access Control (E2E)', () => {
           email: participantUser.email,
           password: participantUser.password,
         });
-      participantCookies = newLogin.headers['set-cookie'];
+      participantCookies = getCookies(newLogin);
     });
   });
 
@@ -325,8 +332,8 @@ describe('Role-Based Access Control (E2E)', () => {
       expect(participantResponse.status).toBe(200);
 
       // Update cookies with refreshed tokens
-      adminCookies = adminResponse.headers['set-cookie'];
-      participantCookies = participantResponse.headers['set-cookie'];
+      adminCookies = getCookies(adminResponse);
+      participantCookies = getCookies(participantResponse);
     });
   });
 });
