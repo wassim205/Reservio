@@ -13,6 +13,9 @@ jest.mock('@prisma/client', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    registration: {
+      groupBy: jest.fn(),
+    },
   };
   return {
     PrismaClient: jest.fn(() => mockPrisma),
@@ -173,7 +176,11 @@ describe('EventsService', () => {
   // ============ FIND ALL ============
   describe('findAll', () => {
     it('should return all events when no status filter', async () => {
-      const allEvents = [mockDraftEvent, mockPublishedEvent, mockCancelledEvent];
+      const allEvents = [
+        mockDraftEvent,
+        mockPublishedEvent,
+        mockCancelledEvent,
+      ];
       mockPrisma.event.findMany.mockResolvedValue(allEvents);
 
       const result = await service.findAll();
@@ -227,6 +234,7 @@ describe('EventsService', () => {
   describe('findPublished', () => {
     it('should return only published events', async () => {
       mockPrisma.event.findMany.mockResolvedValue([mockPublishedEvent]);
+      mockPrisma.registration.groupBy.mockResolvedValue([]);
 
       const result = await service.findPublished();
 
@@ -241,6 +249,7 @@ describe('EventsService', () => {
 
     it('should return empty array when no published events', async () => {
       mockPrisma.event.findMany.mockResolvedValue([]);
+      mockPrisma.registration.groupBy.mockResolvedValue([]);
 
       const result = await service.findPublished();
 
@@ -304,23 +313,23 @@ describe('EventsService', () => {
     it('should throw BadRequestException when updating a published event', async () => {
       mockPrisma.event.findUnique.mockResolvedValue(mockPublishedEvent);
 
-      await expect(
-        service.update('event-456', updateEventDto),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.update('event-456', updateEventDto),
-      ).rejects.toThrow('Cannot edit a published or cancelled event');
+      await expect(service.update('event-456', updateEventDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update('event-456', updateEventDto)).rejects.toThrow(
+        'Cannot edit a published or cancelled event',
+      );
     });
 
     it('should throw BadRequestException when updating a cancelled event', async () => {
       mockPrisma.event.findUnique.mockResolvedValue(mockCancelledEvent);
 
-      await expect(
-        service.update('event-789', updateEventDto),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.update('event-789', updateEventDto),
-      ).rejects.toThrow('Cannot edit a published or cancelled event');
+      await expect(service.update('event-789', updateEventDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update('event-789', updateEventDto)).rejects.toThrow(
+        'Cannot edit a published or cancelled event',
+      );
     });
 
     it('should throw BadRequestException if updated end date is before start date', async () => {
@@ -330,12 +339,12 @@ describe('EventsService', () => {
         endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // Before existing start
       };
 
-      await expect(
-        service.update('event-123', invalidUpdate),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.update('event-123', invalidUpdate),
-      ).rejects.toThrow('End date must be after start date');
+      await expect(service.update('event-123', invalidUpdate)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update('event-123', invalidUpdate)).rejects.toThrow(
+        'End date must be after start date',
+      );
     });
 
     it('should throw NotFoundException if event does not exist', async () => {

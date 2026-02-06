@@ -108,7 +108,9 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should logout and clear cookies', async () => {
-      authService.logout.mockResolvedValue({ message: 'Logged out successfully' });
+      authService.logout.mockResolvedValue({
+        message: 'Logged out successfully',
+      });
       const mockRequest = {
         cookies: { refresh_token: 'token' },
       } as any;

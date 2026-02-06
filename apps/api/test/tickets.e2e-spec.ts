@@ -3,9 +3,21 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
-import { PrismaClient, Role, EventStatus, RegistrationStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  EventStatus,
+  RegistrationStatus,
+} from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
+
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
 
 describe('Tickets E2E', () => {
   let app: INestApplication<App>;
@@ -70,7 +82,10 @@ describe('Tickets E2E', () => {
     adminId = admin.id;
 
     // Create participant user 1
-    const hashedParticipantPassword = await bcrypt.hash(participantUser.password, 10);
+    const hashedParticipantPassword = await bcrypt.hash(
+      participantUser.password,
+      10,
+    );
     const participant = await prisma.user.create({
       data: {
         email: participantUser.email,
@@ -82,7 +97,10 @@ describe('Tickets E2E', () => {
     participantId = participant.id;
 
     // Create participant user 2
-    const hashedParticipant2Password = await bcrypt.hash(participant2User.password, 10);
+    const hashedParticipant2Password = await bcrypt.hash(
+      participant2User.password,
+      10,
+    );
     const participant2 = await prisma.user.create({
       data: {
         email: participant2User.email,
@@ -97,17 +115,23 @@ describe('Tickets E2E', () => {
     const adminResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: adminUser.email, password: adminUser.password });
-    adminCookies = adminResponse.headers['set-cookie'];
+    adminCookies = getCookies(adminResponse);
 
     const participantResponse = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: participantUser.email, password: participantUser.password });
-    participantCookies = participantResponse.headers['set-cookie'];
+      .send({
+        email: participantUser.email,
+        password: participantUser.password,
+      });
+    participantCookies = getCookies(participantResponse);
 
     const participant2Response = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: participant2User.email, password: participant2User.password });
-    participant2Cookies = participant2Response.headers['set-cookie'];
+      .send({
+        email: participant2User.email,
+        password: participant2User.password,
+      });
+    participant2Cookies = getCookies(participant2Response);
 
     // Create a test event (PUBLISHED)
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -335,7 +359,9 @@ describe('Tickets E2E', () => {
 
       // Cleanup
       await prisma.registration.delete({ where: { id: newRegistrationId } });
-      await prisma.refreshToken.deleteMany({ where: { userId: newParticipantId } });
+      await prisma.refreshToken.deleteMany({
+        where: { userId: newParticipantId },
+      });
       await prisma.user.delete({ where: { id: newParticipantId } });
     });
   });

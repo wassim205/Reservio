@@ -7,6 +7,13 @@ import { PrismaClient, Role, EventStatus } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
 
+// Helper to extract cookies from response headers
+const getCookies = (response: request.Response): string[] => {
+  const setCookie = response.headers['set-cookie'];
+  if (!setCookie) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+};
+
 describe('Registrations E2E', () => {
   let app: INestApplication<App>;
   let prisma: PrismaClient;
@@ -33,7 +40,7 @@ describe('Registrations E2E', () => {
   let participantCookies: string[];
   let participant2Cookies: string[];
   let adminId: string;
-  let participantId: string;
+  let _participantId: string;
   let testEventId: string;
   let registrationId: string;
 
@@ -71,13 +78,13 @@ describe('Registrations E2E', () => {
     const participantResponse = await request(app.getHttpServer())
       .post('/auth/register')
       .send(participantUser);
-    participantCookies = participantResponse.headers['set-cookie'];
-    participantId = participantResponse.body.user.id;
+    participantCookies = getCookies(participantResponse);
+    _participantId = participantResponse.body.user.id;
 
     const participant2Response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(participant2User);
-    participant2Cookies = participant2Response.headers['set-cookie'];
+    participant2Cookies = getCookies(participant2Response);
 
     // Login as admin
     const adminResponse = await request(app.getHttpServer())
@@ -86,7 +93,7 @@ describe('Registrations E2E', () => {
         email: adminUser.email,
         password: adminUser.password,
       });
-    adminCookies = adminResponse.headers['set-cookie'];
+    adminCookies = getCookies(adminResponse);
 
     // Create a test event
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -117,7 +124,11 @@ describe('Registrations E2E', () => {
       where: {
         user: {
           email: {
-            in: [adminUser.email, participantUser.email, participant2User.email],
+            in: [
+              adminUser.email,
+              participantUser.email,
+              participant2User.email,
+            ],
           },
         },
       },
@@ -424,7 +435,9 @@ describe('Registrations E2E', () => {
         .set('Cookie', participantCookies)
         .expect(400);
 
-      expect(response.body.message).toBe('This reservation is already cancelled');
+      expect(response.body.message).toBe(
+        'This reservation is already cancelled',
+      );
     });
 
     it('participant can re-register after cancelling', async () => {

@@ -75,8 +75,12 @@ describe('AuthService', () => {
     };
 
     it('should register a new user successfully', async () => {
-      const newUser = { ...mockUser, email: registerDto.email, fullname: registerDto.fullname };
-      
+      const newUser = {
+        ...mockUser,
+        email: registerDto.email,
+        fullname: registerDto.fullname,
+      };
+
       usersService.findByEmail.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
       usersService.create.mockResolvedValue(newUser);
@@ -121,7 +125,10 @@ describe('AuthService', () => {
       const result = await authService.login(loginDto);
 
       expect(usersService.findByEmail).toHaveBeenCalledWith(loginDto.email);
-      expect(bcrypt.compare).toHaveBeenCalledWith(loginDto.password, mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        loginDto.password,
+        mockUser.password,
+      );
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
       expect(result.user).not.toHaveProperty('password');
@@ -154,8 +161,12 @@ describe('AuthService', () => {
 
       const result = await authService.refreshTokens('valid-refresh-token');
 
-      expect(usersService.findRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
-      expect(usersService.deleteRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
+      expect(usersService.findRefreshToken).toHaveBeenCalledWith(
+        'valid-refresh-token',
+      );
+      expect(usersService.deleteRefreshToken).toHaveBeenCalledWith(
+        'valid-refresh-token',
+      );
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
     });
@@ -197,7 +208,9 @@ describe('AuthService', () => {
 
       const result = await authService.logout('refresh-token');
 
-      expect(usersService.deleteRefreshToken).toHaveBeenCalledWith('refresh-token');
+      expect(usersService.deleteRefreshToken).toHaveBeenCalledWith(
+        'refresh-token',
+      );
       expect(result.message).toBe('Logged out successfully');
     });
   });
@@ -208,7 +221,9 @@ describe('AuthService', () => {
 
       const result = await authService.logoutAll('user-123');
 
-      expect(usersService.deleteAllRefreshTokens).toHaveBeenCalledWith('user-123');
+      expect(usersService.deleteAllRefreshTokens).toHaveBeenCalledWith(
+        'user-123',
+      );
       expect(result.message).toBe('Logged out from all devices successfully');
     });
   });

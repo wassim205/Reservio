@@ -39,7 +39,9 @@ export class UsersService {
   }
 
   // Refresh Token Methods
-  async createRefreshToken(data: CreateRefreshTokenInput): Promise<RefreshToken> {
+  async createRefreshToken(
+    data: CreateRefreshTokenInput,
+  ): Promise<RefreshToken> {
     return this.prisma.refreshToken.create({
       data: {
         token: data.token,

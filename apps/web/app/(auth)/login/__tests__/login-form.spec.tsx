@@ -10,6 +10,18 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 
+// Mock the auth context
+const mockLogin = jest.fn();
+jest.mock('@/lib/auth-context', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    isAdmin: false,
+    login: mockLogin,
+    logout: jest.fn(),
+  }),
+}));
+
 // Mock useRouter
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({

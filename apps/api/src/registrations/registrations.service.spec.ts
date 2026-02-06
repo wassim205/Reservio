@@ -274,12 +274,12 @@ describe('RegistrationsService', () => {
     it('should throw NotFoundException if registration does not exist', async () => {
       mockPrisma.registration.findUnique.mockResolvedValue(null);
 
-      await expect(service.cancelOwn('nonexistent', 'user-123')).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.cancelOwn('nonexistent', 'user-123')).rejects.toThrow(
-        'Registration not found',
-      );
+      await expect(
+        service.cancelOwn('nonexistent', 'user-123'),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.cancelOwn('nonexistent', 'user-123'),
+      ).rejects.toThrow('Registration not found');
     });
 
     it('should throw BadRequestException if trying to cancel another user registration', async () => {
@@ -314,7 +314,10 @@ describe('RegistrationsService', () => {
   // ============ FIND BY USER ============
   describe('findByUser', () => {
     it('should return all registrations for a user', async () => {
-      const userRegistrations = [mockRegistration, { ...mockRegistration, id: 'reg-456' }];
+      const userRegistrations = [
+        mockRegistration,
+        { ...mockRegistration, id: 'reg-456' },
+      ];
       mockPrisma.registration.findMany.mockResolvedValue(userRegistrations);
 
       const result = await service.findByUser('user-123');
@@ -331,7 +334,10 @@ describe('RegistrationsService', () => {
   // ============ FIND BY EVENT ============
   describe('findByEvent', () => {
     it('should return all registrations for an event', async () => {
-      const eventRegistrations = [mockRegistration, { ...mockRegistration, id: 'reg-456' }];
+      const eventRegistrations = [
+        mockRegistration,
+        { ...mockRegistration, id: 'reg-456' },
+      ];
       mockPrisma.registration.findMany.mockResolvedValue(eventRegistrations);
 
       const result = await service.findByEvent('event-123');
