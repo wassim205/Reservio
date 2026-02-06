@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TicketsModule } from './tickets/tickets.module';
     EventsModule,
     RegistrationsModule,
     TicketsModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

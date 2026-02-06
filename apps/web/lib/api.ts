@@ -8,6 +8,7 @@ import type {
   UpdateEventInput,
   EventStatus,
   Registration,
+  AdminStats,
 } from './types';
 
 // Use same-origin proxy to avoid cross-origin cookie issues
@@ -196,6 +197,13 @@ class ApiClient {
     }
 
     return response.blob();
+  }
+
+  // ============ ADMIN STATS ENDPOINTS ============
+
+  // Get admin dashboard statistics
+  async getAdminStats(): Promise<{ stats: AdminStats }> {
+    return this.request<{ stats: AdminStats }>('/admin/stats');
   }
 }
 
