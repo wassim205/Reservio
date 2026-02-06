@@ -2,7 +2,7 @@ name: CD - Docker Publish
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
 
 env:
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
