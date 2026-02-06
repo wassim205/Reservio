@@ -142,3 +142,32 @@ export const VALIDATION = {
     },
   },
 };
+
+// Admin Statistics types
+export interface AdminStats {
+  events: {
+    total: number;
+    upcoming: number;
+    published: number;
+    draft: number;
+    cancelled: number;
+  };
+  registrations: {
+    total: number;
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+  };
+  fillRate: {
+    averagePercentage: number;
+    totalCapacity: number;
+    totalConfirmed: number;
+  };
+  topEvents: Array<{
+    id: string;
+    title: string;
+    capacity: number;
+    confirmedCount: number;
+    fillPercentage: number;
+  }>;
+}
