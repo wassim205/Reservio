@@ -333,6 +333,17 @@ export default function AdminEventsPage() {
                     <Eye className="w-5 h-5" />
                   </Link>
 
+                  {/* Registrations (published events) */}
+                  {event.status === 'PUBLISHED' && (
+                    <Link
+                      href={`/admin/events/${event.id}/registrations`}
+                      className="p-2.5 rounded-xl text-purple-500 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                      title="Réservations"
+                    >
+                      <Users className="w-5 h-5" />
+                    </Link>
+                  )}
+
                   {/* Edit (only draft) */}
                   {event.status === 'DRAFT' && (
                     <Link

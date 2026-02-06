@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { Event } from '@/lib/types';
+import { Event, Registration } from '@/lib/types';
 import {
   Calendar,
   MapPin,
@@ -20,6 +20,8 @@ import {
   Share2,
   Zap,
   Shield,
+  CheckCircle,
+  Download,
 } from 'lucide-react';
 
 export default function EventDetailsPage() {
@@ -31,12 +33,27 @@ export default function EventDetailsPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Registration state
+  const [myRegistration, setMyRegistration] = useState<Registration | null>(null);
+  const [reserving, setReserving] = useState(false);
+  const [reservationSuccess, setReservationSuccess] = useState(false);
+  const [reservationError, setReservationError] = useState<string | null>(null);
+
+  // Ticket download state
+  const [downloadingTicket, setDownloadingTicket] = useState(false);
 
   useEffect(() => {
     async function fetchEvent() {
       try {
         const response = await api.getEvent(eventId);
         setEvent(response.event);
+        
+        // Check if user already has a registration for this event
+        if (user) {
+          const registration = await api.checkRegistration(eventId);
+          setMyRegistration(registration);
+        }
       } catch {
         setError('Événement non trouvé');
       } finally {
@@ -45,7 +62,85 @@ export default function EventDetailsPage() {
     }
 
     fetchEvent();
-  }, [eventId]);
+  }, [eventId, user]);
+
+  // Handle reservation
+  const handleReserve = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/events/${eventId}`);
+      return;
+    }
+
+    setReserving(true);
+    setReservationError(null);
+
+    try {
+      const { registration } = await api.registerForEvent(eventId);
+      setMyRegistration(registration);
+      setReservationSuccess(true);
+      
+      // Update remaining seats
+      if (event) {
+        setEvent({
+          ...event,
+          remainingSeats: (event.remainingSeats ?? event.capacity) - 1,
+        });
+      }
+    } catch (err) {
+      const apiError = err as { message: string; statusCode?: number };
+      // Translate common API errors to French user-friendly messages
+      let errorMessage = 'Une erreur est survenue lors de la réservation';
+      
+      if (apiError.message) {
+        if (apiError.message.includes('already registered') || apiError.message.includes('déjà inscrit')) {
+          errorMessage = 'Vous êtes déjà inscrit à cet événement';
+        } else if (apiError.message.includes('past') || apiError.message.includes('passé')) {
+          errorMessage = 'Cet événement est déjà passé';
+        } else if (apiError.message.includes('full') || apiError.message.includes('complet')) {
+          errorMessage = 'Cet événement est complet';
+        } else if (apiError.message.includes('not found') || apiError.message.includes('introuvable')) {
+          errorMessage = 'Événement introuvable';
+        } else if (apiError.message.includes('Unauthorized') || apiError.statusCode === 401) {
+          errorMessage = 'Veuillez vous connecter pour réserver';
+          router.push(`/login?redirect=/events/${eventId}`);
+          return;
+        } else {
+          errorMessage = apiError.message;
+        }
+      }
+      
+      setReservationError(errorMessage);
+    } finally {
+      setReserving(false);
+    }
+  };
+
+  // Handle ticket download
+  const handleDownloadTicket = async () => {
+    if (!myRegistration) return;
+
+    setDownloadingTicket(true);
+    try {
+      const blob = await api.downloadTicket(myRegistration.id);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ticket-${event?.title?.replace(/\s+/g, '-') || 'reservio'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const apiError = err as { message: string };
+      setReservationError(apiError.message || 'Erreur lors du téléchargement du ticket');
+    } finally {
+      setDownloadingTicket(false);
+    }
+  };
 
   // Format full date
   const formatFullDate = (dateString: string) => {
@@ -119,7 +214,7 @@ export default function EventDetailsPage() {
               Accueil
             </Link>
             <Link
-              href="/#events"
+              href="/events"
               className="text-sm font-semibold text-slate-700 hover:text-orange-600 transition-colors"
             >
               Événements
@@ -340,12 +435,75 @@ export default function EventDetailsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {!isPastEvent && !isSoldOut && (
+                  {/* Success Message */}
+                  {reservationSuccess && (
+                    <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-green-100 text-green-700 font-semibold rounded-xl">
+                      <CheckCircle className="w-5 h-5" />
+                      Réservation envoyée ! En attente de confirmation.
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {reservationError && (
+                    <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-red-100 text-red-600 font-semibold rounded-xl">
+                      <AlertCircle className="w-5 h-5" />
+                      {reservationError}
+                    </div>
+                  )}
+
+                  {/* Already Registered - PENDING */}
+                  {myRegistration && myRegistration.status === 'PENDING' && !reservationSuccess && (
+                    <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-amber-100 text-amber-700 font-semibold rounded-xl">
+                      <Clock className="w-5 h-5" />
+                      Réservation en attente de confirmation
+                    </div>
+                  )}
+
+                  {/* Already Registered - CONFIRMED with Download Button */}
+                  {myRegistration && myRegistration.status === 'CONFIRMED' && !reservationSuccess && (
+                    <div className="flex-1 flex flex-col sm:flex-row items-stretch gap-3">
+                      <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-green-100 text-green-700 font-semibold rounded-xl">
+                        <CheckCircle className="w-5 h-5" />
+                        Vous êtes inscrit !
+                      </div>
+                      <button
+                        onClick={handleDownloadTicket}
+                        disabled={downloadingTicket}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {downloadingTicket ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-5 h-5" />
+                            Télécharger ticket
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Reserve Button - Show only if not registered, not past, not sold out */}
+                  {!isPastEvent && !isSoldOut && !myRegistration && !reservationSuccess && (
                     <button
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-linear-to-r from-orange-500 to-rose-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg shadow-orange-500/25 cursor-pointer"
+                      onClick={handleReserve}
+                      disabled={reserving}
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-linear-to-r from-orange-500 to-rose-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg shadow-orange-500/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Ticket className="w-5 h-5" />
-                      Réserver ma place
+                      {reserving ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Réservation en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Ticket className="w-5 h-5" />
+                          {user ? 'Réserver ma place' : 'Se connecter pour réserver'}
+                        </>
+                      )}
                     </button>
                   )}
 
@@ -356,7 +514,7 @@ export default function EventDetailsPage() {
                     </div>
                   )}
 
-                  {!isPastEvent && isSoldOut && (
+                  {!isPastEvent && isSoldOut && !myRegistration && (
                     <div className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-red-100 text-red-600 font-semibold rounded-xl">
                       <Users className="w-5 h-5" />
                       Complet

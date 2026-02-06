@@ -84,6 +84,29 @@ export interface UpdateEventInput {
   metadata?: Record<string, unknown>;
 }
 
+// Registration types
+export type RegistrationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+
+export interface Registration {
+  id: string;
+  status: RegistrationStatus;
+  userId: string;
+  eventId: string;
+  event: {
+    id: string;
+    title: string;
+    startDate: string;
+    location: string;
+  };
+  user: {
+    id: string;
+    fullname: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Validation constants
 export const VALIDATION = {
   email: {
