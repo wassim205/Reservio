@@ -65,9 +65,9 @@ export class EventsService {
     });
   }
 
-  // Get only published events (for participants)
-  async findPublished(): Promise<Event[]> {
-    return this.prisma.event.findMany({
+  // Get only published events (for participants) with remaining seats
+  async findPublished(): Promise<(Event & { remainingSeats: number })[]> {
+    const events = await this.prisma.event.findMany({
       where: { status: EventStatus.PUBLISHED },
       include: {
         createdBy: {
@@ -76,9 +76,20 @@ export class EventsService {
             fullname: true,
           },
         },
+        // Include reservation count when Registration model exists
+        // _count: { select: { registrations: true } },
       },
       orderBy: { startDate: 'asc' },
     });
+
+    // Calculate remaining seats for each event
+    // For now, remainingSeats = capacity (no registrations yet)
+    // When Registration model is added:
+    // remainingSeats = event.capacity - event._count.registrations
+    return events.map((event) => ({
+      ...event,
+      remainingSeats: event.capacity, // TODO: subtract registrations count
+    }));
   }
 
   // Get a single event by ID
