@@ -7,6 +7,7 @@ import type {
   CreateEventInput,
   UpdateEventInput,
   EventStatus,
+  Registration,
 } from './types';
 
 // Use same-origin proxy to avoid cross-origin cookie issues
@@ -124,6 +125,37 @@ class ApiClient {
     await this.request<void>(`/events/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // ============ REGISTRATION ENDPOINTS ============
+
+  // Register for an event (participant)
+  async registerForEvent(eventId: string): Promise<{ registration: Registration; message: string }> {
+    return this.request<{ registration: Registration; message: string }>(`/events/${eventId}/register`, {
+      method: 'POST',
+    });
+  }
+
+  // Get my registrations (participant)
+  async getMyRegistrations(): Promise<{ registrations: Registration[] }> {
+    return this.request<{ registrations: Registration[] }>('/registrations/my');
+  }
+
+  // Cancel my registration (participant)
+  async cancelRegistration(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/registrations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Check if already registered for an event
+  async checkRegistration(eventId: string): Promise<Registration | null> {
+    try {
+      const { registrations } = await this.getMyRegistrations();
+      return registrations.find(r => r.eventId === eventId && r.status !== 'CANCELLED') || null;
+    } catch {
+      return null;
+    }
   }
 }
 
