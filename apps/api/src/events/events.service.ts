@@ -76,19 +76,29 @@ export class EventsService {
             fullname: true,
           },
         },
-        // Include reservation count when Registration model exists
-        // _count: { select: { registrations: true } },
       },
       orderBy: { startDate: 'asc' },
     });
 
-    // Calculate remaining seats for each event
-    // For now, remainingSeats = capacity (no registrations yet)
-    // When Registration model is added:
-    // remainingSeats = event.capacity - event._count.registrations
+    // Get registration counts for all published events
+    const registrationCounts = await this.prisma.registration.groupBy({
+      by: ['eventId'],
+      where: {
+        eventId: { in: events.map((e) => e.id) },
+        status: { in: ['PENDING', 'CONFIRMED'] },
+      },
+      _count: { eventId: true },
+    });
+
+    // Create a map of eventId -> active registration count
+    const countMap = new Map(
+      registrationCounts.map((r) => [r.eventId, r._count.eventId]),
+    );
+
+    // Calculate remaining seats: capacity - active registrations count
     return events.map((event) => ({
       ...event,
-      remainingSeats: event.capacity, // TODO: subtract registrations count
+      remainingSeats: event.capacity - (countMap.get(event.id) || 0),
     }));
   }
 
