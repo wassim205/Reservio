@@ -21,6 +21,7 @@ jest.mock('@prisma/client', () => {
       count: jest.fn(),
       groupBy: jest.fn(),
     },
+    $transaction: jest.fn((callback) => callback(mockPrisma)),
   };
   return {
     PrismaClient: jest.fn(() => mockPrisma),
@@ -381,7 +382,7 @@ describe('RegistrationsService', () => {
         BadRequestException,
       );
       await expect(service.confirm('reg-123')).rejects.toThrow(
-        'Cannot confirm a registration that is confirmed',
+        'Registration is already confirmed',
       );
     });
 
@@ -395,7 +396,7 @@ describe('RegistrationsService', () => {
         BadRequestException,
       );
       await expect(service.confirm('reg-123')).rejects.toThrow(
-        'Cannot confirm a registration that is cancelled',
+        'Cannot confirm a cancelled registration',
       );
     });
   });
