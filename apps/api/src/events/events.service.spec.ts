@@ -13,6 +13,9 @@ jest.mock('@prisma/client', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    registration: {
+      groupBy: jest.fn(),
+    },
   };
   return {
     PrismaClient: jest.fn(() => mockPrisma),
@@ -231,6 +234,7 @@ describe('EventsService', () => {
   describe('findPublished', () => {
     it('should return only published events', async () => {
       mockPrisma.event.findMany.mockResolvedValue([mockPublishedEvent]);
+      mockPrisma.registration.groupBy.mockResolvedValue([]);
 
       const result = await service.findPublished();
 
@@ -245,6 +249,7 @@ describe('EventsService', () => {
 
     it('should return empty array when no published events', async () => {
       mockPrisma.event.findMany.mockResolvedValue([]);
+      mockPrisma.registration.groupBy.mockResolvedValue([]);
 
       const result = await service.findPublished();
 
