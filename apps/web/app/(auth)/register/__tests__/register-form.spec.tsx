@@ -10,6 +10,18 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 
+// Mock the auth context
+const mockLogin = jest.fn();
+jest.mock('@/lib/auth-context', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    isAdmin: false,
+    login: mockLogin,
+    logout: jest.fn(),
+  }),
+}));
+
 // Mock useRouter
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
@@ -55,14 +67,12 @@ describe('RegisterForm', () => {
   it('shows error for invalid email format', async () => {
     render(<RegisterForm />);
 
-    // Fill in other required fields to isolate email validation
     const fullnameInput = screen.getByPlaceholderText('Jean Dupont');
     const emailInput = screen.getByPlaceholderText('exemple@email.com');
     const passwordInput = screen.getByPlaceholderText('••••••••');
     const termsCheckbox = screen.getByRole('checkbox');
 
     await user.type(fullnameInput, 'Jean Dupont');
-    // Use an email that passes HTML5 validation but fails our stricter regex
     await user.type(emailInput, 'test@domain');
     await user.type(passwordInput, 'password123');
     await user.click(termsCheckbox);
@@ -84,7 +94,6 @@ describe('RegisterForm', () => {
     const submitButton = screen.getByRole('button', { name: /créer mon compte/i });
     await user.click(submitButton);
 
-    // Check for the error message (validation message for min length)
     expect(screen.getByText(/Le mot de passe doit contenir au moins 6 caractères/i)).toBeInTheDocument();
   });
 
@@ -110,7 +119,6 @@ describe('RegisterForm', () => {
     await user.type(fullnameInput, 'Jean Dupont');
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
-    // Don't check terms checkbox
 
     const submitButton = screen.getByRole('button', { name: /créer mon compte/i });
     await user.click(submitButton);
@@ -124,7 +132,6 @@ describe('RegisterForm', () => {
     const passwordInput = screen.getByPlaceholderText('••••••••');
     expect(passwordInput).toHaveAttribute('type', 'password');
 
-    // Find the toggle button
     const toggleButtons = screen.getAllByRole('button');
     const toggleButton = toggleButtons.find(btn => btn.getAttribute('type') === 'button');
     
@@ -163,6 +170,7 @@ describe('RegisterForm', () => {
         email: 'test@example.com',
         password: 'password123',
       });
+      expect(mockLogin).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith('/');
     });
   });
@@ -245,7 +253,6 @@ describe('RegisterForm', () => {
     const submitButton = screen.getByRole('button', { name: /créer mon compte/i });
     await user.click(submitButton);
 
-    // Button should be disabled during loading
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /création en cours/i })).toBeDisabled();
     });
