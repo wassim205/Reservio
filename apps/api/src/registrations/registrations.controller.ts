@@ -73,4 +73,30 @@ export class RegistrationsController {
     );
     return { registration, message: 'Reservation cancelled successfully' };
   }
+
+  // ============ ADMIN ENDPOINTS ============
+
+  @Get('events/:eventId/registrations')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async getEventRegistrations(@Param('eventId') eventId: string) {
+    const registrations = await this.registrationsService.findByEvent(eventId);
+    return { registrations };
+  }
+
+  @Post('registrations/:id/confirm')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async confirmRegistration(@Param('id') id: string) {
+    const registration = await this.registrationsService.confirm(id);
+    return { registration, message: 'Reservation confirmed successfully' };
+  }
+
+  @Post('registrations/:id/reject')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async rejectRegistration(@Param('id') id: string) {
+    const registration = await this.registrationsService.reject(id);
+    return { registration, message: 'Reservation rejected successfully' };
+  }
 }

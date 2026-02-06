@@ -200,4 +200,129 @@ export class RegistrationsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // ============ ADMIN METHODS ============
+
+  async findByEvent(eventId: string): Promise<Registration[]> {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new NotFoundException(`Event with ID ${eventId} not found`);
+    }
+
+    return this.prisma.registration.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullname: true,
+            email: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            location: true,
+            capacity: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async confirm(registrationId: string): Promise<Registration> {
+    return this.prisma.$transaction(async (tx) => {
+      const registration = await tx.registration.findUnique({
+        where: { id: registrationId },
+        include: { event: true },
+      });
+
+      if (!registration) {
+        throw new NotFoundException('Registration not found');
+      }
+
+      if (registration.status === RegistrationStatus.CONFIRMED) {
+        throw new BadRequestException('Registration is already confirmed');
+      }
+
+      if (registration.status === RegistrationStatus.CANCELLED) {
+        throw new BadRequestException('Cannot confirm a cancelled registration');
+      }
+
+      const confirmedCount = await tx.registration.count({
+        where: {
+          eventId: registration.eventId,
+          status: RegistrationStatus.CONFIRMED,
+        },
+      });
+
+      if (confirmedCount >= registration.event.capacity) {
+        throw new BadRequestException('Event is at full capacity');
+      }
+
+      return tx.registration.update({
+        where: { id: registrationId },
+        data: { status: RegistrationStatus.CONFIRMED },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              startDate: true,
+              location: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              fullname: true,
+              email: true,
+            },
+          },
+        },
+      });
+    });
+  }
+
+  async reject(registrationId: string): Promise<Registration> {
+    const registration = await this.prisma.registration.findUnique({
+      where: { id: registrationId },
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    if (registration.status === RegistrationStatus.CANCELLED) {
+      throw new BadRequestException('This registration is already cancelled');
+    }
+
+    return this.prisma.registration.update({
+      where: { id: registrationId },
+      data: { status: RegistrationStatus.CANCELLED },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            location: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullname: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
 }
